@@ -1,0 +1,186 @@
+/* Hallmark · redesign (app scope) · genre: modern-minimal · theme: exact-hex (user-approved palette)
+ * emerald #0F766E primary · slate neutrals · light + dark per the approved table
+ * pre-emit critique: P4 H4 E4 S4 R5 V4
+ */
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: all;
+}
+
+/* ---------------------------------------------------------------------------
+ * DaisyUI bridge. Our semantic tokens (--fiber, --card, --ink, …) are rebound
+ * to DaisyUI's per-theme variables (--color-primary, --color-base-100, …),
+ * which DaisyUI redefines for every [data-theme]. So the whole existing
+ * component set re-themes with ANY of DaisyUI's themes, no per-file edits.
+ * One block does both light and dark — DaisyUI vars already switch by theme.
+ * ------------------------------------------------------------------------- */
+:root {
+  --sidebar-w: 280px;
+
+  --paper: var(--color-base-200); /* app background */
+  --card: var(--color-base-100); /* cards / surfaces */
+  --line: var(--color-base-300); /* hairlines */
+
+  /* Sidebar rail uses the theme's neutral color + its paired content color. */
+  --navy: var(--color-neutral);
+  --navy-raise: color-mix(in oklab, var(--color-neutral), var(--color-neutral-content) 10%);
+  --navy-line: color-mix(in oklab, var(--color-neutral), var(--color-neutral-content) 20%);
+
+  --ink: var(--color-base-content); /* primary text */
+  --muted: color-mix(in oklab, var(--color-base-content) 62%, transparent);
+  --faint: color-mix(in oklab, var(--color-base-content) 42%, transparent);
+
+  --fiber: var(--color-primary); /* primary actions / active nav */
+  --fiber-deep: color-mix(in oklab, var(--color-primary), black 15%);
+  --fiber-tint: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-100));
+  --pulse: var(--color-accent);
+  --focus: var(--color-primary);
+
+  --ok: var(--color-success);
+  --ok-tint: color-mix(in oklab, var(--color-success) 14%, var(--color-base-100));
+  --warn: var(--color-warning);
+  --warn-tint: color-mix(in oklab, var(--color-warning) 14%, var(--color-base-100));
+  --scan: var(--color-info);
+  --scan-tint: color-mix(in oklab, var(--color-info) 14%, var(--color-base-100));
+  --bad: var(--color-error);
+  --bad-tint: color-mix(in oklab, var(--color-error) 14%, var(--color-base-100));
+  --doc: var(--color-secondary);
+  --doc-tint: color-mix(in oklab, var(--color-secondary) 14%, var(--color-base-100));
+
+  /* Content colors — text that sits on filled surfaces. */
+  --on-fiber: var(--color-primary-content);
+  --on-navy: var(--color-neutral-content);
+
+  --sh-soft: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 24px rgb(0 0 0 / 0.08);
+  --sh-lift: 0 2px 4px rgb(0 0 0 / 0.08), 0 12px 32px rgb(0 0 0 / 0.14);
+  --sh-fab: 0 8px 24px color-mix(in oklab, var(--color-primary) 40%, transparent);
+
+  --shimmer-tone: color-mix(in oklab, var(--color-base-content) 8%, transparent);
+}
+
+/* Utilities resolve to the runtime variables above — theme switches live. */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-navy: var(--navy);
+  --color-navy-raise: var(--navy-raise);
+  --color-navy-line: var(--navy-line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-fiber: var(--fiber);
+  --color-fiber-deep: var(--fiber-deep);
+  --color-fiber-tint: var(--fiber-tint);
+  --color-pulse: var(--pulse);
+  --color-focus: var(--focus);
+  --color-ok: var(--ok);
+  --color-ok-tint: var(--ok-tint);
+  --color-warn: var(--warn);
+  --color-warn-tint: var(--warn-tint);
+  --color-scan: var(--scan);
+  --color-scan-tint: var(--scan-tint);
+  --color-bad: var(--bad);
+  --color-bad-tint: var(--bad-tint);
+  --color-doc: var(--doc);
+  --color-doc-tint: var(--doc-tint);
+  --color-on-fiber: var(--on-fiber);
+  --color-on-navy: var(--on-navy);
+  --shadow-soft: var(--sh-soft);
+  --shadow-lift: var(--sh-lift);
+  --shadow-fab: var(--sh-fab);
+}
+
+/* Static tokens — identical in both themes. */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 20px;
+  --radius-btn: 14px;
+  --radius-fab: 24px;
+
+  /* Motion — calm & soft. Entrances drift in gently (~500ms);
+   * interactions stay at Design.md's 200ms. */
+  --ease-soft: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --animate-fade-up: fade-up 0.5s var(--ease-soft) both;
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Selected-marker pulse (map) and action feedback */
+  --animate-signal: signal 2.4s ease-in-out infinite;
+  @keyframes signal {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-weight: 500; /* body 500 per Design.md */
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 300ms var(--ease-soft);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Staggered entrance — children drift in one after another. */
+.stagger > * {
+  animation: fade-up 0.5s var(--ease-soft) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+.stagger > *:nth-child(6) { animation-delay: 300ms; }
+.stagger > *:nth-child(7) { animation-delay: 360ms; }
+.stagger > *:nth-child(8) { animation-delay: 420ms; }
+.stagger > *:nth-child(n + 9) { animation-delay: 480ms; }
+
+/* Skeleton shimmer — a soft light sweep instead of opacity pulse. */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--shimmer-tone), transparent);
+  animation: shimmer-sweep 1.8s var(--ease-soft) infinite;
+}
+@keyframes shimmer-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

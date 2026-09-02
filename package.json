@@ -1,0 +1,36 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@googlemaps/js-api-loader": "^2.1.1",
+    "@googlemaps/markerclusterer": "^2.6.2",
+    "@hookform/resolvers": "^5.4.0",
+    "axios": "^1.18.1",
+    "daisyui": "^5.7.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^1.25.0",
+    "next": "16.2.11",
+    "papaparse": "^5.5.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-hook-form": "^7.82.0",
+    "read-excel-file": "^9.3.5",
+    "recharts": "^3.10.1",
+    "write-excel-file": "^4.1.1",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.11",
+    "tailwindcss": "^4"
+  }
+}

@@ -5,11 +5,12 @@ import dynamic from 'next/dynamic'
 import { apiClient, getApiErrorMessage } from '@/lib/api-client'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { Input, Select } from '@/components/ui/Input'
 import { BoundaryEditor, parseBoundaryPoints } from '@/components/admin/BoundaryEditor'
 import { ImportZonesModal } from '@/components/admin/ImportZonesModal'
 import { Pagination } from '@/components/ui/Pagination'
 import { invalidateZones } from '@/hooks/useZones'
+import { useCities } from '@/hooks/useCities'
 import { IconEdit, IconTrash, IconPin, IconUpload, IconDownload, IconMap } from '@/components/ui/icons'
 
 // Client-only: Google Maps JS touches window.
@@ -18,7 +19,7 @@ const GoogleBoundaryMapEditor = dynamic(
   { ssr: false },
 )
 
-const emptyForm = { name: '', city: '', points: [] }
+const emptyForm = { name: '', city: '', cityId: '', points: [] }
 
 function toFormPoints(boundary) {
   return (boundary ?? []).map((point) => ({
@@ -34,10 +35,18 @@ function ZoneForm({ initial, zoneId, onSave, onCancel, onBoundarySaved, saveLabe
   const [error, setError] = useState(null)
   const [mapOpen, setMapOpen] = useState(false)
 
+  // Picking from the City list is what makes the building city filter work —
+  // it reads Zone.cityId. The free-text box below is only a fallback for a
+  // brand-new install with no cities yet.
+  const { cities } = useCities()
+  const cityOptions = cities ?? []
+  const selectedCity = cityOptions.find((city) => city.id === form.cityId) ?? null
+
   const parsedBoundary = parseBoundaryPoints(form.points)
   const boundaryValid =
     form.points.length === 0 || (parsedBoundary !== null && form.points.length >= 3)
-  const canSave = form.name.trim() && form.city.trim() && boundaryValid
+  const cityChosen = cityOptions.length > 0 ? Boolean(form.cityId) : Boolean(form.city.trim())
+  const canSave = form.name.trim() && cityChosen && boundaryValid
 
   async function handleSave() {
     setBusy(true)
@@ -45,7 +54,10 @@ function ZoneForm({ initial, zoneId, onSave, onCancel, onBoundarySaved, saveLabe
     try {
       await onSave({
         name: form.name.trim(),
-        city: form.city.trim(),
+        // Keep the legacy label in step with the chosen city so the two can
+        // never disagree; the server re-resolves cityId from it either way.
+        city: (selectedCity?.name ?? form.city).trim(),
+        cityId: form.cityId || null,
         boundary: form.points.length === 0 ? null : parsedBoundary,
       })
       // Reset the create form so it's usable again; edit forms unmount on save.
@@ -66,12 +78,31 @@ function ZoneForm({ initial, zoneId, onSave, onCancel, onBoundarySaved, saveLabe
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
         />
-        <Input
-          id="zone-city"
-          placeholder="City e.g. Pune"
-          value={form.city}
-          onChange={(e) => setForm({ ...form, city: e.target.value })}
-        />
+        {cityOptions.length > 0 ? (
+          <Select
+            id="zone-city"
+            value={form.cityId}
+            onChange={(e) => {
+              const id = e.target.value
+              const match = cityOptions.find((city) => city.id === id)
+              setForm({ ...form, cityId: id, city: match?.name ?? '' })
+            }}
+          >
+            <option value="">Select city</option>
+            {cityOptions.map((city) => (
+              <option key={city.id} value={city.id}>
+                {city.name}
+              </option>
+            ))}
+          </Select>
+        ) : (
+          <Input
+            id="zone-city"
+            placeholder="City e.g. Pune"
+            value={form.city}
+            onChange={(e) => setForm({ ...form, city: e.target.value })}
+          />
+        )}
       </div>
 
       <div className="flex items-center justify-between gap-3">
@@ -289,7 +320,12 @@ export default function AdminZonesPage() {
                 setEditingId(null)
                 fetchZones()
               }}
-              initial={{ name: zone.name, city: zone.city, points: toFormPoints(zone.boundary) }}
+              initial={{
+                name: zone.name,
+                city: zone.city,
+                cityId: zone.cityRef?.id ?? '',
+                points: toFormPoints(zone.boundary),
+              }}
               saveLabel="Save changes"
               onCancel={() => setEditingId(null)}
               onSave={async (payload) => {

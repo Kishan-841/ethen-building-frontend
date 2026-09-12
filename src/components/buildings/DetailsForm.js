@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/Button'
@@ -94,6 +94,22 @@ function ToggleRow({ label, value, onChange }) {
 export function DetailsForm({ onSubmit, submitting, serverError }) {
   const { zones, loading: zonesLoading } = useZones()
   const { types: buildingTypes } = useBuildingTypes()
+  // City narrows the zone list; it is NOT stored on the building. A building's
+  // city is derived through its zone, so a second copy here could drift.
+  // The options come off the zones themselves rather than GET /cities, which is
+  // admin/manager-only — surveyors are the main users of this form.
+  const [cityId, setCityId] = useState('')
+  const cities = useMemo(() => {
+    const byId = new Map()
+    for (const zone of zones ?? []) {
+      if (zone.cityRef) byId.set(zone.cityRef.id, zone.cityRef)
+    }
+    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name))
+  }, [zones])
+  const visibleZones = useMemo(
+    () => (cityId ? (zones ?? []).filter((zone) => zone.cityRef?.id === cityId) : (zones ?? [])),
+    [zones, cityId],
+  )
   // Is the fiber connection live here? Drives the green/red map marker.
   const [isLive, setIsLive] = useState(false)
   // Permission details stay hidden until the surveyor says money changed hands.
@@ -133,10 +149,34 @@ export function DetailsForm({ onSubmit, submitting, serverError }) {
           No zones assigned to you yet — contact your admin.
         </p>
       )}
+      {cities.length > 0 && (
+        <Select
+          id="city"
+          label="City"
+          value={cityId}
+          onChange={(e) => {
+            const next = e.target.value
+            setCityId(next)
+            // Drop a zone that no longer belongs to the chosen city, so the
+            // form can't submit a zone the surveyor can no longer see.
+            const stillValid =
+              !next || (zones ?? []).some((z) => z.id === zoneId && z.cityRef?.id === next)
+            if (!stillValid) setValue('zoneId', '', { shouldValidate: false })
+          }}
+        >
+          <option value="">All cities</option>
+          {cities.map((city) => (
+            <option key={city.id} value={city.id}>
+              {city.name}
+            </option>
+          ))}
+        </Select>
+      )}
+
       {/* zoneId lives in RHF via this hidden field; the search select drives it. */}
       <input type="hidden" {...register('zoneId')} />
       <ZoneSearchSelect
-        zones={zones}
+        zones={visibleZones}
         value={zoneId}
         disabled={zonesLoading}
         error={errors.zoneId?.message}
